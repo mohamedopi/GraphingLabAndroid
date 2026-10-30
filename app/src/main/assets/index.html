@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#173d9a">
+<title>Graphing Lab</title>
+<style>
+:root{--bg:#f5f8fc;--panel:#fff;--ink:#13233d;--muted:#65748b;--line:#d8e2ef;--blue:#245bff;--err:#c92a2a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+header{padding:16px 18px;background:linear-gradient(110deg,#173d9a,#1269ba 48%,#14a9a6);color:#fff}
+h1{font-size:23px;margin:0 0 4px}
+header p{margin:0;opacity:.9;font-size:13px}
+main{max-width:1100px;margin:auto;padding:12px;display:grid;grid-template-columns:minmax(230px,330px) 1fr;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:13px;box-shadow:0 5px 18px #17365d0c;min-width:0}
+h2{font-size:16px;margin:0 0 10px;overflow-wrap:anywhere}
+.tabs,.buttons{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+button,select,input{font:inherit;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff;color:var(--ink)}
+button{cursor:pointer}
+.active,.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;font-family:ui-monospace,monospace;font-size:13px}
+input[type=text],input[type=number]{direction:ltr;text-align:left}
+input[type=checkbox]{width:auto;margin-inline-end:6px;vertical-align:middle}
+.check{display:flex;align-items:center;font-weight:400;color:var(--ink);font-size:13px;margin-top:12px}
+.hint{font-size:12px;color:var(--muted);line-height:1.6;margin:7px 0}
+.hidden{display:none}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.keys,.presets{display:flex;gap:6px;flex-wrap:wrap}
+.keys{margin-top:8px}
+.keys button{padding:6px 9px;font-size:13px;font-family:ui-monospace,monospace;direction:ltr;background:#f0f5fc}
+.presets button{font-size:12px;padding:7px}
+.canvashead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.lg{display:inline-block;margin-inline-end:12px;font-size:15px}
+.lg[style*="--c"]{border-inline-start:4px solid var(--c);padding-inline-start:6px}
+canvas{display:block;width:100%;height:52vh;min-height:290px;border:1px solid var(--line);border-radius:10px;background:#fbfdff;touch-action:pan-y}
+.status{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+.status.err{color:var(--err);font-weight:600}
+@media(max-width:740px){main{grid-template-columns:1fr;padding:9px}.canvasPanel{order:1}.controls{order:2}canvas{height:42vh;min-height:260px}header{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Graphing Lab</h1>
+  <p>رسم رياضي ثنائي وثلاثي الأبعاد · أزرق ← سماوي ← أخضر ← أصفر</p>
+</header>
+<main>
+<section class="panel controls">
+  <h2>إعدادات المعادلة</h2>
+  <div class="tabs"><button id="tab2" class="active">رسم 2D</button><button id="tab3">سطح 3D</button></div>
+
+  <div id="fields2">
+    <label for="eq2">الدالة <bdi dir="ltr">y = f(x)</bdi> — حتى 4 دوال مفصولة بـ <bdi dir="ltr">;</bdi></label>
+    <input id="eq2" type="text" value="sin(x)" dir="ltr" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="keys" id="keys2"></div>
+    <div class="row">
+      <div><label for="xmin">أقل قيمة x</label><input id="xmin" type="number" step="any" value="-10"></div>
+      <div><label for="xmax">أكبر قيمة x</label><input id="xmax" type="number" step="any" value="10"></div>
+    </div>
+    <div class="row">
+      <div><label for="ymin">أقل قيمة y (اختياري)</label><input id="ymin" type="number" step="any" placeholder="تلقائي"></div>
+      <div><label for="ymax">أكبر قيمة y (اختياري)</label><input id="ymax" type="number" step="any" placeholder="تلقائي"></div>
+    </div>
+  </div>
+
+  <div id="fields3" class="hidden">
+    <label for="coordMode">نظام الإحداثيات</label>
+    <select id="coordMode">
+      <option value="cart">ديكارتي &#x2066;z = f(x, y)&#x2069;</option>
+      <option value="cyl">أسطواني &#x2066;z = f(r, theta)&#x2069;</option>
+      <option value="sph">كروي &#x2066;r = f(theta, phi)&#x2069;</option>
+    </select>
+    <label for="eq3">معادلة السطح</label>
+    <input id="eq3" type="text" value="sin(sqrt(x^2+y^2))" dir="ltr" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="keys" id="keys3"></div>
+    <div id="eqHint" class="hint"></div>
+    <div id="rangeBox">
+      <label for="range3">حد المجال L</label>
+      <input id="range3" type="number" value="3" min="0.5" max="100" step="0.5">
+    </div>
+    <label for="resolution">دقة الرسم</label>
+    <select id="resolution">
+      <option value="20">سريع</option>
+      <option value="30" selected>متوازن</option>
+      <option value="42">تفصيلي</option>
+      <option value="60">عالٍ (أبطأ)</option>
+    </select>
+    <label class="check"><input id="trueAspect" type="checkbox">مقياس حقيقي للمحاور الثلاثة</label>
+  </div>
+
+  <div class="buttons" style="margin-top:12px"><button id="draw" class="primary">ارسم</button><button id="reset">إعادة ضبط المنظور</button></div>
+  <label>أمثلة سريعة</label>
+  <div class="presets" id="presets"></div>
+  <p class="hint">اكتب المعادلة كما على الحاسبة: <bdi dir="ltr">x^2</bdi> أو <bdi dir="ltr">2x</bdi> أو <bdi dir="ltr">sin(x)</bdi> أو <bdi dir="ltr">sqrt(x)</bdi> أو <bdi dir="ltr">pi</bdi>. الزوايا بالراديان. <bdi dir="ltr">log</bdi> هو اللوغاريتم الطبيعي، و<bdi dir="ltr">log10</bdi> العشري. المعادلات الضمنية غير مدعومة.</p>
+</section>
+
+<section class="panel canvasPanel">
+  <div class="canvashead"><h2 id="plotTitle"></h2></div>
+  <canvas id="plot" aria-label="الرسم الرياضي"></canvas>
+  <div class="status" id="status">جاهز</div>
+</section>
+</main>
+
+<script>
+'use strict';
+
+/* ======================= المحلل الرياضي (دوال نقية) ======================= */
+/*PURE-START*/
+const CONST = {pi: Math.PI, e: Math.E, tau: 2 * Math.PI};
+const F1 = {
+  sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan,
+  sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh, sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs,
+  exp: Math.exp, ln: Math.log, log: Math.log, log10: Math.log10, log2: Math.log2,
+  floor: Math.floor, ceil: Math.ceil, round: Math.round, sign: Math.sign
+};
+const FN = {
+  atan2: {f: Math.atan2, n: 2},
+  pow: {f: rpow, n: 2},
+  mod: {f: function (a, b) { return a - b * Math.floor(a / b); }, n: 2},
+  min: {f: Math.min, n: -1},
+  max: {f: Math.max, n: -1},
+  hypot: {f: Math.hypot, n: -1}
+};
+
+// قوة حقيقية: (-8)^(1/3) = -2 بدل NaN
+function rpow(a, b) {
+  if (a < 0 && Number.isFinite(b) && b !== Math.round(b)) {
+    for (let q = 3; q <= 15; q += 2) {
+      const p = b * q;
+      if (Math.abs(p - Math.round(p)) < 1e-9) return (Math.round(p) % 2 === 0 ? 1 : -1) * Math.pow(-a, b);
+    }
+    return NaN;
+  }
+  return Math.pow(a, b);
+}
+
+function normalize(s) {
+  const AR = '٠١٢٣٤٥٦٧٨٩', FA = '۰۱۲۳۴۵۶۷۸۹';
+  return String(s).toLowerCase()
+    .replace(/[٠-٩]/g, function (d) { return AR.indexOf(d); })
+    .replace(/[۰-۹]/g, function (d) { return FA.indexOf(d); })
+    .replace(/٫/g, '.').replace(/،/g, ',')
+    .replace(/[×·]/g, '*').replace(/÷/g, '/').replace(/[−–—]/g, '-')
+    .replace(/π/g, 'pi').replace(/θ/g, 'theta').replace(/[φϕ]/g, 'phi').replace(/τ/g, 'tau')
+    .replace(/²/g, '^2').replace(/³/g, '^3').replace(/√/g, 'sqrt');
+}
+
+// "xy" -> x*y ، "2xsin(x)" ... : تفكيك الاسم الملتصق إلى أسماء معروفة
+function splitIdent(id, known) {
+  if (known.has(id)) return [id];
+  const n = id.length, best = new Array(n + 1).fill(null);
+  best[0] = [];
+  for (let i = 0; i < n; i++) {
+    if (!best[i]) continue;
+    for (let j = i + 1; j <= n; j++) {
+      const s = id.slice(i, j);
+      if (known.has(s) && !best[j]) best[j] = best[i].concat(s);
+    }
+  }
+  return best[n];
+}
+
+function tokenize(src, known) {
+  const out = [];
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') { i++; continue; }
+    if ((c >= '0' && c <= '9') || c === '.') {
+      const m = /^(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/.exec(src.slice(i));
+      if (!m) throw Error('رقم غير صالح قرب: ' + src.slice(i, i + 6));
+      out.push({k: 'num', v: parseFloat(m[0])});
+      i += m[0].length;
+      continue;
+    }
+    if ((c >= 'a' && c <= 'z') || c === '_') {
+      const id = /^[a-z_][a-z_0-9]*/.exec(src.slice(i))[0];
+      const parts = splitIdent(id, known);
+      if (!parts) throw Error('رمز غير معروف: ' + id);
+      for (const p of parts) out.push({k: 'id', v: p});
+      i += id.length;
+      continue;
+    }
+    if (c === '*' && src[i + 1] === '*') { out.push({k: 'op', v: '^'}); i += 2; continue; }
+    if ('+-*/^%(),'.indexOf(c) >= 0) { out.push({k: 'op', v: c}); i++; continue; }
+    throw Error('رمز غير مدعوم: ' + c);
+  }
+  return out;
+}
+
+/* يحوّل نصًا إلى دالة. vars: أسماء المتغيرات، lhsNames: ما يُقبل قبل علامة = */
+function compileExpr(text, vars, lhsNames) {
+  let src = normalize(text);
+  const eqi = src.indexOf('=');
+  if (eqi >= 0) {
+    if (src.indexOf('=', eqi + 1) >= 0) throw Error('يوجد أكثر من علامة = في المعادلة');
+    const lhs = src.slice(0, eqi).replace(/\s+/g, '');
+    const re = new RegExp('^(?:' + lhsNames.join('|') + '|f|g)(?:\\([a-z,]*\\))?$');
+    if (!re.test(lhs)) throw Error('المعادلات الضمنية غير مدعومة؛ اكتب الصيغة على شكل ' + lhsNames[0] + ' = ...');
+    src = src.slice(eqi + 1);
+  }
+  if (!src.trim()) throw Error('المعادلة فارغة');
+
+  const known = new Set(vars.concat(Object.keys(CONST), Object.keys(F1), Object.keys(FN)));
+  const toks = tokenize(src, known);
+  let p = 0;
+  const peek = function () { return toks[p]; };
+  const isOp = function (v) { const t = toks[p]; return !!t && t.k === 'op' && t.v === v; };
+  const expect = function (v) {
+    if (!isOp(v)) throw Error(v === ')' ? 'قوس غير مغلق' : 'متوقع الرمز ' + v);
+    p++;
+  };
+
+  function expr() {
+    let a = term();
+    while (isOp('+') || isOp('-')) {
+      const o = toks[p++].v, b = term(), l = a;
+      a = o === '+' ? function (v) { return l(v) + b(v); } : function (v) { return l(v) - b(v); };
+    }
+    return a;
+  }
+  function term() {
+    let a = unary();
+    for (;;) {
+      const t = peek();
+      if (!t) break;
+      const l = a;
+      if (t.k === 'op' && (t.v === '*' || t.v === '/' || t.v === '%')) {
+        p++;
+        const b = unary();
+        if (t.v === '*') a = function (v) { return l(v) * b(v); };
+        else if (t.v === '/') a = function (v) { return l(v) / b(v); };
+        else a = function (v) { const y = b(v); return l(v) - y * Math.floor(l(v) / y); };
+      } else if (t.k === 'num' || t.k === 'id' || (t.k === 'op' && t.v === '(')) {
+        const b = power();                       // ضرب ضمني: 2x ، x(x+1) ، 2(x+1)
+        a = function (v) { return l(v) * b(v); };
+      } else break;
+    }
+    return a;
+  }
+  function unary() {
+    if (isOp('-')) { p++; const a = unary(); return function (v) { return -a(v); }; }
+    if (isOp('+')) { p++; return unary(); }
+    return power();
+  }
+  function power() {
+    const base = primary();
+    if (isOp('^')) {
+      p++;
+      const ex = unary();                        // -x^2 = -(x^2) ، 2^-x مسموح ، 2^3^2 = 2^(3^2)
+      return function (v) { return rpow(base(v), ex(v)); };
+    }
+    return base;
+  }
+  function primary() {
+    const t = toks[p++];
+    if (!t) throw Error('المعادلة غير مكتملة');
+    if (t.k === 'num') { const c = t.v; return function () { return c; }; }
+    if (t.k === 'op' && t.v === '(') { const a = expr(); expect(')'); return a; }
+    if (t.k === 'id') {
+      const name = t.v;
+      if (Object.prototype.hasOwnProperty.call(F1, name) || Object.prototype.hasOwnProperty.call(FN, name)) {
+        if (!isOp('(')) throw Error('الدالة ' + name + ' تحتاج أقواسًا مثل ' + name + '(x)');
+        p++;
+        const args = [];
+        if (!isOp(')')) {
+          args.push(expr());
+          while (isOp(',')) { p++; args.push(expr()); }
+        }
+        expect(')');
+        if (Object.prototype.hasOwnProperty.call(F1, name)) {
+          if (args.length !== 1) throw Error('الدالة ' + name + ' تأخذ وسيطًا واحدًا');
+          const f = F1[name], a0 = args[0];
+          return function (v) { return f(a0(v)); };
+        }
+        const d = FN[name];
+        if (d.n > 0 && args.length !== d.n) throw Error('الدالة ' + name + ' تأخذ ' + d.n + ' وسيطين');
+        if (d.n < 0 && args.length < 1) throw Error('الدالة ' + name + ' تحتاج وسيطًا واحدًا على الأقل');
+        const f = d.f;
+        if (args.length === 2) { const a0 = args[0], a1 = args[1]; return function (v) { return f(a0(v), a1(v)); }; }
+        return function (v) { const xs = []; for (let i = 0; i < args.length; i++) xs.push(args[i](v)); return f.apply(null, xs); };
+      }
+      const vi = vars.indexOf(name);
+      if (vi >= 0) return function (v) { return v[vi]; };
+      if (Object.prototype.hasOwnProperty.call(CONST, name)) { const c = CONST[name]; return function () { return c; }; }
+      throw Error('رمز غير معروف: ' + name);
+    }
+    throw Error('رمز غير متوقع: ' + t.v);
+  }
+
+  const root = expr();
+  if (p < toks.length) throw Error(toks[p].v === ')' ? 'قوس إغلاق زائد' : 'رمز غير متوقع: ' + toks[p].v);
+  const arr = new Array(vars.length).fill(0);
+  return function (a, b) { arr[0] = a; if (vars.length > 1) arr[1] = b; return root(arr); };
+}
+
+function niceStep(span, target) {
+  const raw = span / target, pw = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / pw;
+  return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * pw;
+}
+function ticks(lo, hi, target) {
+  const st = niceStep(hi - lo, target), out = [];
+  for (let v = Math.ceil(lo / st - 1e-9) * st; v <= hi + st * 1e-9; v += st) out.push(Math.abs(v) < st * 1e-9 ? 0 : +v.toPrecision(12));
+  return {step: st, list: out};
+}
+function palette(t) {
+  t = Math.max(0, Math.min(1, t));
+  const s = [[48, 35, 168], [23, 105, 255], [0, 201, 213], [87, 214, 123], [255, 229, 45]];
+  const q = t * 4, i = Math.min(3, Math.floor(q)), a = q - i;
+  return 'rgb(' + s[i].map(function (v, k) { return Math.round(v + (s[i + 1][k] - v) * a); }).join(',') + ')';
+}
+function quantile(sorted, q) { return sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor(q * (sorted.length - 1))))]; }
+/* مدى "معقول": إذا كانت هناك قيم شاذة ضخمة (مثل tan أو 1/x) نُهمل أطرافها */
+function robustRange(sorted) {
+  const n = sorted.length, lo = sorted[0], hi = sorted[n - 1];
+  if (n < 10) return {lo: lo, hi: hi, clipped: false};
+  const p1 = quantile(sorted, 0.05), p2 = quantile(sorted, 0.95), sp = p2 - p1;
+  if (sp > 0 && (hi - lo) > 5 * sp) return {lo: p1 - 0.25 * sp, hi: p2 + 0.25 * sp, clipped: true};
+  return {lo: lo, hi: hi, clipped: false};
+}
+/*PURE-END*/
+
+/* ============================== الواجهة ============================== */
+const $ = function (id) { return document.getElementById(id); };
+const canvas = $('plot'), ctx = canvas.getContext('2d');
+const ltr = function (s) { return '\u2066' + s + '\u2069'; };
+const COLORS = ['#1769ff', '#e8590c', '#0ca678', '#ae3ec9'];
+const DEF_VIEW = {az: 0.65, el: 0.9, zoom: 1};
+const view = Object.assign({}, DEF_VIEW);
+let mode = 2, last2 = null, surf = null, lastEq = $('eq2');
+
+const P2 = [['sin(x)', 'sin(x)'], ['قطع مكافئ', 'x^2/4'], ['موجة مخمدة', 'exp(-abs(x)/4)*sin(3*x)'], ['tan(x)', 'tan(x)'], ['1/x', '1/x'], ['دالتان', 'sin(x); cos(x)']];
+const PCART = [['تموج', 'sin(sqrt(x^2+y^2))'], ['قطع مكافئ', '(x^2+y^2)/4'], ['سرج', 'x^2-y^2'], ['موجة', 'cos(x)*sin(y)'], ['قمة', 'exp(-(x^2+y^2))']];
+const PCYL = [['تموج', 'sin(r)'], ['قطع مكافئ', 'r^2/4'], ['مخروط', 'r'], ['حلزون', 'r*sin(theta)/2']];
+const PSPH = [['كرة', '2'], ['تشوه بسيط', '2+0.4*sin(phi)*cos(theta)'], ['وردة', '2+0.6*sin(3*theta)*sin(phi)']];
+const DEF_EQ = {cart: 'sin(sqrt(x^2+y^2))', cyl: 'sin(r)', sph: '2'};
+const HINTS = {
+  cart: '<bdi dir="ltr">z = f(x, y)</bdi> — المتغيران x وy من <bdi dir="ltr">-L</bdi> إلى <bdi dir="ltr">L</bdi>.',
+  cyl: '<bdi dir="ltr">z = f(r, theta)</bdi> — r من 0 إلى L، وtheta من 0 إلى 2π (راديان).',
+  sph: '<bdi dir="ltr">r = f(theta, phi)</bdi> — theta الزاوية الأفقية من 0 إلى 2π، وphi الزاوية عن المحور z من 0 إلى π (راديان).'
+};
+
+function coordMode() { return $('coordMode').value; }
+function varsFor(cm) { return cm === 'cart' ? ['x', 'y'] : cm === 'cyl' ? ['r', 'theta'] : ['theta', 'phi']; }
+function size() {
+  const r = canvas.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, Math.round(r.width * d));
+  canvas.height = Math.max(1, Math.round(r.height * d));
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  ctx.direction = 'ltr';
+  return [r.width, r.height];
+}
+function bg(w, h) { ctx.fillStyle = '#fbfdff'; ctx.fillRect(0, 0, w, h); }
+function fmt(v) {
+  if (v === 0) return '0';
+  const a = Math.abs(v);
+  if (a >= 1e6 || a < 1e-4) return v.toExponential(1).replace('e+', 'e');
+  return String(+v.toPrecision(3));
+}
+function tickLabel(v, step) {
+  if (v === 0) return '0';
+  const a = Math.abs(v);
+  if (a >= 1e6 || a < 1e-4) return v.toExponential(0).replace('e+', 'e');
+  return v.toFixed(Math.min(6, Math.max(0, -Math.floor(Math.log10(step) + 1e-9))));
+}
+function setStatus(t, isErr) { const s = $('status'); s.textContent = t; s.classList.toggle('err', !!isErr); }
+function setTitle(parts) {
+  const h = $('plotTitle');
+  h.textContent = '';
+  parts.forEach(function (p) {
+    const s = document.createElement('span');
+    s.className = 'lg';
+    if (p.color) s.style.setProperty('--c', p.color);
+    if (p.ltr) s.dir = 'ltr';
+    s.textContent = p.text;
+    h.appendChild(s);
+  });
+}
+function numField(id, label) {
+  const v = parseFloat($(id).value);
+  if (!Number.isFinite(v)) throw Error('أدخل رقمًا صحيحًا في حقل: ' + label);
+  return v;
+}
+function optField(id) { return $(id).value.trim() === '' ? null : numField(id, id); }
+function fail(e) {
+  surf = null; last2 = null;
+  $('plotTitle').textContent = '';
+  const s = size(); bg(s[0], s[1]);
+  setStatus('خطأ في المعادلة: ' + (e && e.message ? e.message : e), true);
+}
+
+/* ------------------------------ رسم 2D ------------------------------ */
+function read2() {
+  const exprs = $('eq2').value.split(/[;\n]/).map(function (s) { return s.trim(); }).filter(Boolean);
+  if (!exprs.length) throw Error('اكتب الدالة أولًا');
+  if (exprs.length > 4) throw Error('الحد الأقصى 4 دوال في الرسم الواحد');
+  const fns = exprs.map(function (s) { return compileExpr(s, ['x'], ['y']); });
+  const xmin = numField('xmin', 'أقل قيمة x'), xmax = numField('xmax', 'أكبر قيمة x');
+  if (!(xmax > xmin)) throw Error('قيمة x الكبرى يجب أن تكون أكبر من الصغرى');
+  const ymin = optField('ymin'), ymax = optField('ymax');
+  if ((ymin === null) !== (ymax === null)) throw Error('أدخل قيمتي y معًا أو اتركهما فارغتين');
+  if (ymin !== null && !(ymax > ymin)) throw Error('قيمة y الكبرى يجب أن تكون أكبر من الصغرى');
+  return {exprs: exprs, fns: fns, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax};
+}
+
+function renderPlot2(p) {
+  const wh = size(), w = wh[0], h = wh[1];
+  bg(w, h);
+  const n = Math.max(700, Math.floor(w * 2)), curves = [], all = [];
+  for (let c = 0; c < p.fns.length; c++) {
+    const xs = new Float64Array(n + 1), ys = new Float64Array(n + 1);
+    for (let i = 0; i <= n; i++) {
+      const x = p.xmin + (p.xmax - p.xmin) * i / n;
+      let y = p.fns[c](x);
+      if (!Number.isFinite(y) || Math.abs(y) > 1e12) y = NaN; else all.push(y);
+      xs[i] = x; ys[i] = y;
+    }
+    curves.push({xs: xs, ys: ys});
+  }
+  if (!all.length) throw Error('لا توجد قيم حقيقية في هذا المجال');
+  let lo, hi, clipped = false;
+  if (p.ymin !== null) { lo = p.ymin; hi = p.ymax; }
+  else {
+    const sorted = Float64Array.from(all).sort(), r = robustRange(sorted);
+    lo = r.lo; hi = r.hi; clipped = r.clipped;
+    if (!(hi > lo)) { lo -= 1; hi += 1; }
+    const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
+  }
+  const ML = 46, MR = 12, MT = 12, MB = 26, pw = Math.max(10, w - ML - MR), ph = Math.max(10, h - MT - MB);
+  const X = function (x) { return ML + (x - p.xmin) / (p.xmax - p.xmin) * pw; };
+  const Y = function (y) { return MT + ph - (y - lo) / (hi - lo) * ph; };
+
+  ctx.font = '11px system-ui,sans-serif';
+  ctx.fillStyle = '#65748b'; ctx.strokeStyle = '#e1e8f1'; ctx.lineWidth = 1;
+  const tx = ticks(p.xmin, p.xmax, Math.max(3, Math.round(pw / 70)));
+  const ty = ticks(lo, hi, Math.max(3, Math.round(ph / 45)));
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  tx.list.forEach(function (v) {
+    const px = Math.round(X(v)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(px, MT); ctx.lineTo(px, MT + ph); ctx.stroke();
+    ctx.fillText(tickLabel(v, tx.step), px, MT + ph + 6);
+  });
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ty.list.forEach(function (v) {
+    const py = Math.round(Y(v)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(ML, py); ctx.lineTo(ML + pw, py); ctx.stroke();
+    ctx.fillText(tickLabel(v, ty.step), ML - 6, py);
+  });
+  ctx.strokeStyle = '#8391a5'; ctx.lineWidth = 1.5;
+  if (lo < 0 && hi > 0) { const py = Math.round(Y(0)) + 0.5; ctx.beginPath(); ctx.moveTo(ML, py); ctx.lineTo(ML + pw, py); ctx.stroke(); }
+  if (p.xmin < 0 && p.xmax > 0) { const px = Math.round(X(0)) + 0.5; ctx.beginPath(); ctx.moveTo(px, MT); ctx.lineTo(px, MT + ph); ctx.stroke(); }
+  ctx.strokeStyle = '#c4d0e0'; ctx.lineWidth = 1; ctx.strokeRect(ML + 0.5, MT + 0.5, pw, ph);
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(ML, MT, pw, ph); ctx.clip();
+  ctx.lineWidth = 2.4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const span = hi - lo;
+  curves.forEach(function (cv, ci) {
+    ctx.strokeStyle = COLORS[ci % COLORS.length];
+    ctx.beginPath();
+    let open = false, prev = NaN;
+    for (let i = 0; i <= n; i++) {
+      const y = cv.ys[i];
+      if (y !== y) { open = false; continue; }
+      if (open && Math.abs(y - prev) > span) open = false;      // فصل الخط عند الانقطاع (مثل tan)
+      const px = X(cv.xs[i]), py = Y(y);
+      if (!open) { ctx.moveTo(px, py); open = true; } else ctx.lineTo(px, py);
+      prev = y;
+    }
+    ctx.stroke();
+  });
+  ctx.restore();
+  setStatus('تم الرسم · مدى x ' + ltr('[' + fmt(p.xmin) + ', ' + fmt(p.xmax) + ']') + ' · مدى y ' + ltr('[' + fmt(lo) + ', ' + fmt(hi) + ']') + (clipped ? ' · أُهملت القيم الشاذة الضخمة للعرض' : ''));
+}
+
+/* ------------------------------ سطح 3D ------------------------------ */
+function read3() {
+  const cm = coordMode();
+  const fn = compileExpr($('eq3').value, varsFor(cm), cm === 'sph' ? ['r', 'rho'] : ['z']);
+  const L = cm === 'sph' ? 1 : numField('range3', 'حد المجال L');
+  if (!(L > 0 && L <= 1000)) throw Error('حد المجال L يجب أن يكون بين 0 و 1000');
+  return {cm: cm, fn: fn, L: L, N: parseInt($('resolution').value, 10) || 30, expr: $('eq3').value.trim(), trueAspect: $('trueAspect').checked};
+}
+
+function buildSurface(p) {
+  const cm = p.cm, fn = p.fn, L = p.L, N = p.N, M = N + 1, cnt = M * M;
+  const X = new Float64Array(cnt), Y = new Float64Array(cnt), Z = new Float64Array(cnt), H = new Float64Array(cnt);
+  for (let j = 0; j <= N; j++) {
+    for (let i = 0; i <= N; i++) {
+      const k = j * M + i;
+      let x, y, z, hv;
+      if (cm === 'cart') { x = -L + 2 * L * i / N; y = -L + 2 * L * j / N; z = fn(x, y); hv = z; }
+      else if (cm === 'cyl') { const r = L * i / N, t = 2 * Math.PI * j / N; x = r * Math.cos(t); y = r * Math.sin(t); z = fn(r, t); hv = z; }
+      else { const t = 2 * Math.PI * i / N, ph = Math.PI * j / N, r = fn(t, ph); hv = r; x = r * Math.sin(ph) * Math.cos(t); y = r * Math.sin(ph) * Math.sin(t); z = r * Math.cos(ph); }
+      const ok = Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z) && Math.abs(x) < 1e9 && Math.abs(y) < 1e9 && Math.abs(z) < 1e9;
+      X[k] = x; Y[k] = y; Z[k] = ok ? z : NaN; H[k] = ok ? hv : NaN;
+    }
+  }
+  // إهمال القيم الشاذة الضخمة (مثل 1/(x^2+y^2) قرب الصفر) حتى لا تسطّح بقية السطح
+  const vals = [];
+  for (let k = 0; k < cnt; k++) if (Z[k] === Z[k]) vals.push(H[k]);
+  if (!vals.length) throw Error('لا توجد قيم حقيقية للسطح في هذا المجال');
+  const rr = robustRange(Float64Array.from(vals).sort());
+  let culled = 0;
+  if (rr.clipped) for (let k = 0; k < cnt; k++) if (Z[k] === Z[k] && (H[k] < rr.lo || H[k] > rr.hi)) { Z[k] = NaN; culled++; }
+
+  let xl = Infinity, xh = -Infinity, yl = Infinity, yh = -Infinity, zl = Infinity, zh = -Infinity, nv = 0;
+  for (let k = 0; k < cnt; k++) {
+    if (Z[k] !== Z[k]) continue;
+    nv++;
+    xl = Math.min(xl, X[k]); xh = Math.max(xh, X[k]); yl = Math.min(yl, Y[k]); yh = Math.max(yh, Y[k]);
+    zl = Math.min(zl, Z[k]); zh = Math.max(zh, Z[k]);
+  }
+  if (!nv) throw Error('لا توجد قيم حقيقية للسطح في هذا المجال');
+  if (cm === 'cart') { xl = yl = -L; xh = yh = L; }
+  const dx = (xh - xl) || 1, dy = (yh - yl) || 1, dz = (zh - zl) || 1;
+  const cx = (xl + xh) / 2, cy = (yl + yh) / 2, cz = (zl + zh) / 2;
+  let sx, sy, sz;
+  if (p.trueAspect) { sx = sy = sz = 2 / Math.max(dx, dy, dz); }
+  else { sx = sy = 2 / Math.max(dx, dy); sz = 1.6 / dz; }
+  const NX = new Float32Array(cnt), NY = new Float32Array(cnt), NZ = new Float32Array(cnt);
+  for (let k = 0; k < cnt; k++) {
+    if (Z[k] !== Z[k]) { NX[k] = NY[k] = NZ[k] = NaN; continue; }
+    NX[k] = (X[k] - cx) * sx; NY[k] = (Y[k] - cy) * sy; NZ[k] = (Z[k] - cz) * sz;
+  }
+  const quads = [], cols = [];
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      const a = j * M + i, b = a + 1, c = a + M + 1, d = a + M;
+      if (Z[a] !== Z[a] || Z[b] !== Z[b] || Z[c] !== Z[c] || Z[d] !== Z[d]) continue;
+      quads.push(a);
+      cols.push(palette(((Z[a] + Z[b] + Z[c] + Z[d]) / 4 - zl) / dz));
+    }
+  }
+  if (!quads.length) throw Error('لا توجد قيم حقيقية كافية لرسم السطح');
+  return {M: M, N: N, NX: NX, NY: NY, NZ: NZ, quads: Int32Array.from(quads), cols: cols, zl: zl, zh: zh,
+          hx: dx * sx / 2, hy: dy * sy / 2, hz: dz * sz / 2, culled: culled};
+}
+
+function renderSurface() {
+  const wh = size(), w = wh[0], h = wh[1];
+  bg(w, h);
+  if (!surf) return;
+  const S = surf, M = S.M, cnt = M * M;
+  const caz = Math.cos(view.az), saz = Math.sin(view.az), cel = Math.cos(view.el), sel = Math.sin(view.el);
+  const R = Math.sqrt(S.hx * S.hx + S.hy * S.hy + S.hz * S.hz) || 1;
+  const sc = 0.45 * Math.min(w, h) / R * view.zoom, cx = w / 2, cy = h * 0.46;
+  // الإسقاط: X أفقي، (Y*sin(el) + z*cos(el)) رأسي إلى الأعلى، والعمق D نحو الناظر
+  const proj = function (x, y, z) {
+    const X = x * caz - y * saz, Y = x * saz + y * caz;
+    return [cx + X * sc, cy - (Y * sel + z * cel) * sc, -Y * cel + z * sel];
+  };
+  // الأرضية
+  const fl = [[-S.hx, -S.hy], [S.hx, -S.hy], [S.hx, S.hy], [-S.hx, S.hy]].map(function (q) { return proj(q[0], q[1], -S.hz); });
+  ctx.fillStyle = 'rgba(36,91,255,.05)'; ctx.strokeStyle = '#c8d4e6'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(fl[0][0], fl[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(fl[i][0], fl[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+  for (let g = 1; g < 4; g++) {
+    const t = g / 4;
+    const a1 = proj(-S.hx + 2 * S.hx * t, -S.hy, -S.hz), a2 = proj(-S.hx + 2 * S.hx * t, S.hy, -S.hz);
+    const b1 = proj(-S.hx, -S.hy + 2 * S.hy * t, -S.hz), b2 = proj(S.hx, -S.hy + 2 * S.hy * t, -S.hz);
+    ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(a2[0], a2[1]); ctx.moveTo(b1[0], b1[1]); ctx.lineTo(b2[0], b2[1]); ctx.stroke();
+  }
+  // رؤوس السطح
+  const PX = new Float32Array(cnt), PY = new Float32Array(cnt), PD = new Float32Array(cnt);
+  for (let k = 0; k < cnt; k++) {
+    const z = S.NZ[k];
+    if (z !== z) continue;
+    const x = S.NX[k], y = S.NY[k], X = x * caz - y * saz, Y = x * saz + y * caz;
+    PX[k] = cx + X * sc; PY[k] = cy - (Y * sel + z * cel) * sc; PD[k] = -Y * cel + z * sel;
+  }
+  const nq = S.quads.length, dep = new Float32Array(nq), idx = new Array(nq);
+  for (let q = 0; q < nq; q++) { const a = S.quads[q]; dep[q] = PD[a] + PD[a + 1] + PD[a + M + 1] + PD[a + M]; idx[q] = q; }
+  idx.sort(function (u, v) { return dep[u] - dep[v]; });         // الأبعد أولًا
+  ctx.lineWidth = S.N >= 42 ? 0.3 : 0.45; ctx.strokeStyle = 'rgba(10,38,70,.35)'; ctx.lineJoin = 'round';
+  for (let m = 0; m < nq; m++) {
+    const q = idx[m], a = S.quads[q];
+    ctx.beginPath();
+    ctx.moveTo(PX[a], PY[a]); ctx.lineTo(PX[a + 1], PY[a + 1]); ctx.lineTo(PX[a + M + 1], PY[a + M + 1]); ctx.lineTo(PX[a + M], PY[a + M]);
+    ctx.closePath();
+    ctx.fillStyle = S.cols[q]; ctx.fill(); ctx.stroke();
+  }
+  // مؤشر الاتجاهات x y z
+  const ox = 32, oy = 38, len = 22;
+  const dirs = [['x', 1, 0, 0], ['y', 0, 1, 0], ['z', 0, 0, 1]];
+  ctx.font = 'bold 11px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 1.6; ctx.strokeStyle = '#5b6b83'; ctx.fillStyle = '#5b6b83'; ctx.lineCap = 'round';
+  dirs.forEach(function (d) {
+    const X = d[1] * caz - d[2] * saz, Y = d[1] * saz + d[2] * caz, ex = ox + X * len, ey = oy - (Y * sel + d[3] * cel) * len;
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.fillText(d[0], ox + (ex - ox) * 1.35, oy + (ey - oy) * 1.35);
+  });
+  // شريط الألوان
+  const bw = Math.min(190, w * 0.5), bx = (w - bw) / 2, by = h - 22;
+  const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (t) { g.addColorStop(t, palette(t)); });
+  ctx.fillStyle = g; ctx.fillRect(bx, by, bw, 8);
+  ctx.fillStyle = '#65748b'; ctx.font = '11px system-ui,sans-serif'; ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right'; ctx.fillText(fmt(S.zl), bx - 6, by + 4);
+  ctx.textAlign = 'left'; ctx.fillText(fmt(S.zh), bx + bw + 6, by + 4);
+}
+
+let raf = 0;
+function schedule() { if (!raf) raf = requestAnimationFrame(function () { raf = 0; if (mode === 3) renderSurface(); }); }
+
+/* ------------------------------ تحكم عام ------------------------------ */
+function draw() {
+  try {
+    if (mode === 2) {
+      const p = read2();
+      last2 = p; surf = null;
+      setTitle(p.exprs.map(function (e, i) { return {text: e.indexOf('=') >= 0 ? e : 'y = ' + e, color: p.exprs.length > 1 ? COLORS[i] : null, ltr: true}; }));
+      renderPlot2(p);
+    } else {
+      const p = read3();
+      last2 = null;
+      surf = buildSurface(p);
+      const lhs = p.cm === 'sph' ? 'r' : 'z', label = $('coordMode').selectedOptions[0].text.split(/\s/)[0];
+      setTitle([{text: p.expr.indexOf('=') >= 0 ? p.expr : lhs + ' = ' + p.expr, ltr: true}, {text: '· ' + label}]);
+      renderSurface();
+      setStatus('سطح 3D · شبكة ' + ltr(p.N + '×' + p.N) + ' · مدى z ' + ltr('[' + fmt(surf.zl) + ', ' + fmt(surf.zh) + ']') + (surf.culled ? ' · أُخفيت ' + surf.culled + ' نقطة شاذة' : '') + ' · اسحب للتدوير وافتح إصبعين للتكبير');
+    }
+  } catch (e) { fail(e); }
+}
+function redraw() {
+  try {
+    if (mode === 2 && last2) renderPlot2(last2);
+    else if (mode === 3 && surf) renderSurface();
+  } catch (e) { fail(e); }
+}
+
+function insertText(t, back) {
+  const el = lastEq, s = el.selectionStart === null ? el.value.length : el.selectionStart, e = el.selectionEnd === null ? s : el.selectionEnd;
+  el.value = el.value.slice(0, s) + t + el.value.slice(e);
+  const pos = s + t.length - (back || 0);
+  el.focus(); el.setSelectionRange(pos, pos);
+}
+function buildKeys(box, vars) {
+  box.innerHTML = '';
+  const items = vars.map(function (v) { return [v, v, 0]; }).concat([
+    ['^', '^', 0], ['(', '(', 0], [')', ')', 0], ['*', '*', 0], ['/', '/', 0], ['π', 'pi', 0],
+    ['√', 'sqrt()', 1], ['sin', 'sin()', 1], ['cos', 'cos()', 1], ['tan', 'tan()', 1], ['exp', 'exp()', 1], ['ln', 'ln()', 1], ['abs', 'abs()', 1]]);
+  items.forEach(function (it) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = it[0];
+    b.onpointerdown = function (e) { e.preventDefault(); };
+    b.onclick = function () { insertText(it[1], it[2]); };
+    box.appendChild(b);
+  });
+}
+function buildPresets() {
+  const cm = coordMode(), list = mode === 2 ? P2 : cm === 'sph' ? PSPH : cm === 'cyl' ? PCYL : PCART;
+  $('presets').innerHTML = '';
+  list.forEach(function (it) {
+    const b = document.createElement('button');
+    b.textContent = it[0];
+    b.dir = 'auto';
+    b.onclick = function () { (mode === 2 ? $('eq2') : $('eq3')).value = it[1]; draw(); };
+    $('presets').appendChild(b);
+  });
+}
+function applyCoordMode() {
+  const cm = coordMode();
+  $('eqHint').innerHTML = HINTS[cm];
+  $('rangeBox').classList.toggle('hidden', cm === 'sph');
+  buildKeys($('keys3'), varsFor(cm));
+  buildPresets();
+}
+function setMode(m) {
+  mode = m;
+  $('tab2').classList.toggle('active', m === 2); $('tab3').classList.toggle('active', m === 3);
+  $('fields2').classList.toggle('hidden', m !== 2); $('fields3').classList.toggle('hidden', m !== 3);
+  canvas.style.touchAction = m === 3 ? 'none' : 'pan-y';
+  lastEq = m === 2 ? $('eq2') : $('eq3');
+  buildPresets();
+  draw();
+}
+
+$('tab2').onclick = function () { setMode(2); };
+$('tab3').onclick = function () { setMode(3); };
+$('coordMode').onchange = function () {
+  const cm = coordMode();
+  $('eq3').value = DEF_EQ[cm];
+  $('trueAspect').checked = cm === 'sph';
+  applyCoordMode(); draw();
+};
+$('draw').onclick = draw;
+$('reset').onclick = function () { Object.assign(view, DEF_VIEW); if (mode === 3) schedule(); };
+$('resolution').onchange = draw;
+$('trueAspect').onchange = draw;
+$('eq2').addEventListener('focus', function () { lastEq = $('eq2'); });
+$('eq3').addEventListener('focus', function () { lastEq = $('eq3'); });
+['eq2', 'eq3', 'xmin', 'xmax', 'ymin', 'ymax', 'range3'].forEach(function (id) {
+  $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); draw(); } });
+});
+
+/* لمس: إصبع واحد للتدوير، إصبعان للتكبير */
+const ptrs = new Map();
+let pinch = 0;
+const pdist = function () { const a = Array.from(ptrs.values()); return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); };
+canvas.addEventListener('pointerdown', function (e) {
+  if (mode !== 3) return;
+  canvas.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (ptrs.size === 2) pinch = pdist();
+});
+canvas.addEventListener('pointermove', function (e) {
+  if (mode !== 3 || !ptrs.has(e.pointerId)) return;
+  const q = ptrs.get(e.pointerId), dx = e.clientX - q.x, dy = e.clientY - q.y;
+  q.x = e.clientX; q.y = e.clientY;
+  if (ptrs.size === 1) {
+    view.az += dx * 0.009;
+    view.el = Math.max(0.02, Math.min(Math.PI / 2, view.el + dy * 0.008));
+  } else if (ptrs.size === 2) {
+    const d = pdist();
+    if (pinch > 0) view.zoom = Math.max(0.4, Math.min(4, view.zoom * d / pinch));
+    pinch = d;
+  }
+  schedule();
+});
+const endPtr = function (e) { ptrs.delete(e.pointerId); pinch = 0; };
+canvas.addEventListener('pointerup', endPtr);
+canvas.addEventListener('pointercancel', endPtr);
+canvas.addEventListener('wheel', function (e) {
+  if (mode !== 3) return;
+  e.preventDefault();
+  view.zoom = Math.max(0.4, Math.min(4, view.zoom * (e.deltaY < 0 ? 1.08 : 0.92)));
+  schedule();
+}, {passive: false});
+window.addEventListener('resize', redraw);
+
+buildKeys($('keys2'), ['x']);
+applyCoordMode();
+setMode(2);
+</script>
+</body>
+</html>

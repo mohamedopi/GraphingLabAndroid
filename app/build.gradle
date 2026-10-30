@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// يمرّرها GitHub Actions تلقائيًا: رقم التشغيل يصبح versionCode ليقبل الهاتف التحديث.
+def runNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+def appVersion = System.getenv('APP_VERSION') ?: '1.1.0'
+
+android {
+    namespace 'com.graphinglab.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.graphinglab.app'
+        minSdk 23
+        targetSdk 35
+        versionCode runNumber
+        versionName appVersion
+    }
+
+    // مفتاح توقيع ثابت داخل المستودع: كل نسخة جديدة تُثبَّت فوق القديمة دون حذف التطبيق.
+    // (مناسب للاستخدام الشخصي. لا تستخدمه للنشر على Google Play.)
+    signingConfigs {
+        release {
+            storeFile file('graphinglab.keystore')
+            storePassword 'graphinglab'
+            keyAlias 'graphinglab'
+            keyPassword 'graphinglab'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
